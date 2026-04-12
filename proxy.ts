@@ -1,7 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+// CAMBIO AQUÍ: El nombre de la función debe ser 'proxy'
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
@@ -15,15 +16,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // CORRECCIÓN AQUÍ: 
-          // Para el 'request' solo pasamos name y value (2 argumentos)
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          
           response = NextResponse.next({ request })
-
-          // Para la 'response' sí pasamos name, value y options (3 argumentos)
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
