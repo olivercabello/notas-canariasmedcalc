@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
     "@yoopta/action-menu-list": "^4.9.9",
     "@yoopta/editor": "^6.0.2",
