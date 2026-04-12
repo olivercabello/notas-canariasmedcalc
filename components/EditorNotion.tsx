@@ -1,12 +1,19 @@
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
 import YooptaEditor, { createYooptaEditor } from '@yoopta/editor';
+import { 
+  Save, 
+  ChevronLeft,
+  Loader2
+} from 'lucide-react';
+
 import Paragraph from '@yoopta/paragraph';
 import { HeadingOne, HeadingTwo, HeadingThree } from '@yoopta/headings';
-import { BulletedList, NumberedList, TodoList } from '@yoopta/lists';
-import { supabase } from '../lib/supabase';
+// CORRECCIÓN: El nombre correcto es BulletedList, no BulletList
+import { BulletedList, NumberedList } from '@yoopta/lists';
 
-// 1. Definimos los plugins fuera del componente
+// Definimos los plugins fuera para que sean estables
 const PLUGINS = [
   Paragraph,
   HeadingOne,
@@ -14,68 +21,109 @@ const PLUGINS = [
   HeadingThree,
   BulletedList,
   NumberedList,
-  TodoList
 ];
 
 export default function EditorNotion() {
-  // 2. CORRECCIÓN: Pasamos los plugins directamente al crear el editor
-  const editor = useMemo(() => createYooptaEditor({ plugins: PLUGINS }), []);
+  // CORRECCIÓN: Los plugins ahora se pasan OBLIGATORIAMENTE aquí dentro
+  const editor = useMemo(() => createYooptaEditor({ 
+    plugins: PLUGINS 
+  }), []);
   
-  const [titulo, setTitulo] = useState("");
+  const [titulo, setTitulo] = useState('');
+  const [proyectoId, setProyectoId] = useState<string | null>(null);
+  const [proyectos, setProyectos] = useState<any[]>([]);
   const [guardando, setGuardando] = useState(false);
 
-  const guardarEnSupabase = async () => {
-    if (!titulo) {
-      alert("Por favor, añade un título a la nota");
-      return;
-    }
+  useEffect(() => {
+    const fetchProyectos = async () => {
+      const { data } = await supabase.from('proyectos').select('id, nombre');
+      if (data) setProyectos(data);
+    };
+    fetchProyectos();
+  }, []);
 
+  const guardarNota = async () => {
+    if (guardando) return;
     setGuardando(true);
+    
     const contenido = editor.getEditorValue();
-
-    const { error } = await supabase
-      .from('notas')
-      .insert([
-        { 
-          titulo: titulo, 
-          contenido: contenido 
-        }
-      ]);
+    
+    const { error } = await supabase.from('notas').insert([
+      { 
+        titulo: titulo || 'Sin título', 
+        contenido, 
+        proyecto_id: proyectoId 
+      }
+    ]);
 
     if (error) {
-      console.error("Error:", error);
-      alert("Hubo un problema al guardar");
+      alert("Error al guardar: " + error.message);
     } else {
-      alert("Nota guardada en Canarias Medcal");
+      alert("¡Nota guardada!");
     }
     setGuardando(false);
   };
 
   return (
-    <div className="max-w-[850px] mx-auto py-20 px-8">
-      {/* 3. CORRECCIÓN: Usamos un 'input' para el título para evitar el error de placeholder */}
-      <input 
+    <div className="max-w-5xl mx-auto py-10 px-8">
+      {/* Navegación superior */}
+      <div className="flex items-center justify-between mb-10 text-gray-400">
+        <button 
+          onClick={() => window.history.back()}
+          className="flex items-center gap-1 hover:text-gray-600 transition-colors text-sm"
+        >
+          <ChevronLeft size={16} />
+          Atrás
+        </button>
+        
+        <div className="flex items-center gap-4">
+          <label htmlFor="proyecto-select" className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Vincular a:
+          </label>
+          <select 
+            id="proyecto-select"
+            className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-blue-500/10"
+            onChange={(e) => setProyectoId(e.target.value || null)}
+            value={proyectoId || ''}
+          >
+            <option value="">Nota independiente</option>
+            {proyectos.map(p => (
+              <option key={p.id} value={p.id}>{p.nombre}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Título */}
+      <input
         type="text"
-        placeholder="Título de la nota médica..."
+        placeholder="Título de la página"
+        className="w-full text-5xl font-bold outline-none mb-12 placeholder:text-gray-100 text-gray-900 border-none focus:ring-0"
         value={titulo}
         onChange={(e) => setTitulo(e.target.value)}
-        className="text-5xl font-extrabold mb-10 w-full outline-none border-none bg-transparent placeholder:text-gray-200 text-gray-800"
       />
-      
-      <div className="min-h-[500px]">
-        <YooptaEditor 
-          editor={editor} 
-          placeholder="Escribe aquí los detalles del paciente o pulsa '/' para comandos..."
-          className="text-lg"
+
+      {/* El Editor */}
+      <div className="min-h-[500px] mb-32">
+        <YooptaEditor
+          editor={editor}
+          placeholder="Escribe algo o pulsa '/' para comandos..."
+          // CORRECCIÓN: Ya no pasamos 'plugins' aquí, se pasan en createYooptaEditor
         />
       </div>
 
+      {/* Botón Guardar */}
       <button 
-        onClick={guardarEnSupabase}
+        onClick={guardarNota}
         disabled={guardando}
-        className="fixed bottom-10 right-10 bg-blue-600 text-white px-8 py-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all font-medium disabled:bg-gray-300"
+        className="fixed bottom-8 right-8 bg-blue-600 text-white px-6 py-3 rounded-xl shadow-xl hover:bg-blue-700 transition-all flex items-center gap-2 font-semibold disabled:bg-gray-300"
       >
-        {guardando ? "Sincronizando..." : "Guardar nota"}
+        {guardando ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <Save size={18} />
+        )}
+        {guardando ? 'Guardando...' : 'Guardar'}
       </button>
     </div>
   );
