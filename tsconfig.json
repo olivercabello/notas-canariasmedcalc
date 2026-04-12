@@ -18,8 +18,12 @@
         "name": "next"
       }
     ],
+    /* Solución definitiva para TS 6.0+ */
+    "ignoreDeprecations": "6.0", 
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"] 
     }
   },
   "include": [

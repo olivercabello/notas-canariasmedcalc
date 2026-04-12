@@ -1,37 +1,81 @@
 "use client";
+import { useState, useMemo } from 'react';
 import YooptaEditor, { createYooptaEditor } from '@yoopta/editor';
 import Paragraph from '@yoopta/paragraph';
 import { HeadingOne, HeadingTwo, HeadingThree } from '@yoopta/headings';
-import { BulletedList, NumberedList } from '@yoopta/lists';
-import { useMemo } from 'react';
+import { BulletedList, NumberedList, TodoList } from '@yoopta/lists';
+import { supabase } from '../lib/supabase';
 
-// Configuramos los plugins que queremos usar
-const plugins = [Paragraph, HeadingOne, HeadingTwo, HeadingThree, BulletedList, NumberedList];
+// 1. Definimos los plugins fuera del componente
+const PLUGINS = [
+  Paragraph,
+  HeadingOne,
+  HeadingTwo,
+  HeadingThree,
+  BulletedList,
+  NumberedList,
+  TodoList
+];
 
 export default function EditorNotion() {
-  const editor = useMemo(() => createYooptaEditor(), []);
+  // 2. CORRECCIÓN: Pasamos los plugins directamente al crear el editor
+  const editor = useMemo(() => createYooptaEditor({ plugins: PLUGINS }), []);
+  
+  const [titulo, setTitulo] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
-  // Función para guardar (la conectaremos a Supabase luego)
-  const guardarNota = () => {
+  const guardarEnSupabase = async () => {
+    if (!titulo) {
+      alert("Por favor, añade un título a la nota");
+      return;
+    }
+
+    setGuardando(true);
     const contenido = editor.getEditorValue();
-    console.log("Guardando en base de datos:", contenido);
+
+    const { error } = await supabase
+      .from('notas')
+      .insert([
+        { 
+          titulo: titulo, 
+          contenido: contenido 
+        }
+      ]);
+
+    if (error) {
+      console.error("Error:", error);
+      alert("Hubo un problema al guardar");
+    } else {
+      alert("Nota guardada en Canarias Medcal");
+    }
+    setGuardando(false);
   };
 
   return (
-    <div className="max-w-[800px] mx-auto py-10">
-      <h1 className="text-4xl font-bold mb-8 outline-none" contentEditable placeholder="Título de la nota">
-        Nueva Nota Médica
-      </h1>
-      <YooptaEditor 
-        editor={editor} 
-        plugins={plugins} 
-        placeholder="Escribe aquí o usa '/' para comandos..." 
+    <div className="max-w-[850px] mx-auto py-20 px-8">
+      {/* 3. CORRECCIÓN: Usamos un 'input' para el título para evitar el error de placeholder */}
+      <input 
+        type="text"
+        placeholder="Título de la nota médica..."
+        value={titulo}
+        onChange={(e) => setTitulo(e.target.value)}
+        className="text-5xl font-extrabold mb-10 w-full outline-none border-none bg-transparent placeholder:text-gray-200 text-gray-800"
       />
+      
+      <div className="min-h-[500px]">
+        <YooptaEditor 
+          editor={editor} 
+          placeholder="Escribe aquí los detalles del paciente o pulsa '/' para comandos..."
+          className="text-lg"
+        />
+      </div>
+
       <button 
-        onClick={guardarNota}
-        className="fixed bottom-5 right-5 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700"
+        onClick={guardarEnSupabase}
+        disabled={guardando}
+        className="fixed bottom-10 right-10 bg-blue-600 text-white px-8 py-4 rounded-full shadow-2xl hover:bg-blue-700 transition-all font-medium disabled:bg-gray-300"
       >
-        Guardar Nota
+        {guardando ? "Sincronizando..." : "Guardar nota"}
       </button>
     </div>
   );
