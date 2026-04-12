@@ -1,7 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'
 
-// Estas variables deben coincidir con las de tu archivo .env.local
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Este log nos ayudará a ver en la consola si las llaves están llegando
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("⚠️ Error: Las variables de entorno de Supabase no están cargadas.")
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
