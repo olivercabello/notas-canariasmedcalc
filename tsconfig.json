@@ -18,11 +18,12 @@
         "name": "next"
       }
     ],
-    /* Solución definitiva para TS 6.0+ */
-    "ignoreDeprecations": "6.0", 
+    /* Usamos 5.0 que es el estándar compatible con Vercel */
+    "ignoreDeprecations": "5.0", 
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
+      /* IMPORTANTE: Quitamos 'src' porque tus carpetas están en la raíz */
       "@/*": ["./*"] 
     }
   },
