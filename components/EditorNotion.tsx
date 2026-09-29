@@ -44,13 +44,21 @@ export default function EditorNotion() {
 
   const guardarNota = async () => {
     if (guardando) return;
+
+    const tituloLimpio = titulo.trim();
+    if (!tituloLimpio) {
+      alert("El título no puede estar vacío ni contener solo espacios.");
+      return;
+    }
+
+    setTitulo(tituloLimpio);
     setGuardando(true);
     
     const contenido = editor.getEditorValue();
     
     const { error } = await supabase.from('notas').insert([
       { 
-        titulo: titulo || 'Sin título', 
+        titulo: tituloLimpio, 
         contenido, 
         proyecto_id: proyectoId 
       }
